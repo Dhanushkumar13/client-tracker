@@ -1,24 +1,101 @@
-import logo from './logo.svg';
 import './App.css';
+import React, { useEffect, useState } from 'react';
 
 function App() {
+  const [name, setName] = useState('');
+  const [datetime, setDatetime] = useState('');
+  const [description, setDescription] = useState('')
+  const [transactions, setTransactions] = useState([])
+
+  useEffect(()=>{
+    getTransactions().then(setTransactions)
+  }, [])
+
+  async function getTransactions(){
+    const link = 'http://localhost:4000/api/transactions'
+    const response = await fetch(link);
+    return await response.json()
+  }
+
+  function addNewTransaction(e){
+    e.preventDefault();
+    const url = "http://localhost:4000/api/transaction";
+    const price= name.split(' ')[0]
+    fetch(url,{
+      method: 'POST',
+      headers:{'Content-type': 'application/json'},
+      body: JSON.stringify({
+        price, 
+        name: name.substring(price.length+1), 
+        description, 
+        datetime}),
+    })
+    .then(res => res.json()) // Parse the response JSON here
+    .then(data => { // Handle the parsed JSON data
+      setName('');
+      setDatetime('');
+      setDescription('');
+      console.log('result', data);
+    })
+    .catch(error => { // Handle any errors that occur during the request
+      console.error('Error:', error);
+    });
+  }
+  
+  let balance = 0;
+  for(const transaction of transactions){
+    balance = balance + transaction.price;
+  }
+
+  balance = balance.toFixed(2);
+  const fraction = balance.split('.')[1];
+  balance = balance.split('.')[0];
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <main>
+      <h1>₹{balance}<span>{fraction}</span></h1>
+      <form onSubmit={addNewTransaction}>
+        <div className='basic'>
+          <input 
+          type='text'
+          value={name}
+          onChange={e => setName(e.target.value)} 
+          placeholder={'Purchased Item'}/>
+          <input
+          value={datetime}
+          onChange={e => setDatetime(e.target.value)} 
+          type='datetime-local'/>
+        </div>
+        <div>
+          <input
+           value={description}
+           onChange={e=> setDescription(e.target.value)}
+          type='text' 
+          placeholder={'description'}/>
+        </div>
+        <button type='submit'>Add new transaction</button>
+      </form>
+      <div className='transactions'>
+      {transactions.length > 0 && transactions.map(transaction => {
+  return (
+        <div>
+          <div className='transaction'>
+            <div className='left'>
+              <div className='name'>{transaction.name}</div>
+              <div className='description'>{transaction.description}</div>
+            </div>
+            <div className='right'>
+              <div className={'price' + (transaction.price < 0 ? ' red' : ' green')}>
+                {transaction.price}
+              </div>
+              <div className='datetime'>2023-12-04 15:45</div>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+      </div>
+    </main>
   );
 }
 
